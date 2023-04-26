@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import AWS from 'aws-sdk';
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+// import { Credentials } from "@aws-sdk";
 
 // Configure AWS S3 credentials
-AWS.config.update({
-  accessKeyId: 'AKIARY5SVF3I3NKUN274',
-  secretAccessKey: 'gVFNXkKP770xZ/rjhIGZvQFkQ1YZ/uaZA473a8UW',
-  region: 'us-east-1' // Replace with your desired AWS S3 region
+const s3Client = new S3Client({ region: "us-east-1",
+credentials: {
+  accessKeyId: "AKIARY5SVF3I3NKUN274", 
+  secretAccessKey: "gVFNXkKP770xZ/rjhIGZvQFkQ1YZ/uaZA473a8UW", 
+},
 });
 
 
@@ -31,35 +33,34 @@ const App = () => {
     // reader.readAsText(file);
   }
 
-  const handleFileUpload = (file) => {
+  const handleFileUpload = async (file) => {
     console.log("file:")
     console.log(file)
-    // Create an instance of the S3 service
-    const s3 = new AWS.S3();
-  
-    // Set the S3 bucket name and key (file name)
-    const bucketName = 'fovus-challenge-input-bucket';
-    const key = file.name;
-  
-    // Create a new S3 PutObject request
-    const params = {
-      Bucket: bucketName,
-      Key: key,
-      Body: file
-    };
 
-    console.log("came here")
-    console.log(params);
-  
-    // Upload the file to S3
-    s3.upload(params, (err, data) => {
-      if (err) {
-        console.error(err);
-      } else {
-        console.log('File uploaded successfully:', data);
-        // Handle successful upload, e.g., update UI, show success message, etc.
-      }
-    });
+    try {
+      // Set the S3 bucket name and key (file name)
+      const bucketName = 'fovus-challenge-input-bucket';
+      const key = file.name;
+
+      // Create a new S3 PutObject request
+      const params = {
+        Bucket: bucketName,
+        Key: key,
+        Body: file
+      };
+
+      console.log("came here")
+      console.log(params);
+
+      // Upload the file to S3
+      const uploadCommand = new PutObjectCommand(params);
+      await s3Client.send(uploadCommand);
+
+      console.log("File uploaded successfully.");
+    } catch (err) {
+      console.error("Failed to upload file:", err);
+    }
+
   };
   
 
