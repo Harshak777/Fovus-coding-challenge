@@ -45,8 +45,7 @@ const App = () => {
     const params = {
       Bucket: bucketName,
       Key: key,
-      Body: file,
-      ACL: 'public-read' // Set the appropriate ACL for your use case
+      Body: file
     };
 
     console.log("came here")
