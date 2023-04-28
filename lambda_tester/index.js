@@ -1,9 +1,12 @@
 const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 const { nanoid } = require('nanoid');
 
-exports.handler = async (event) => {
-  const inputText = event.input_text;
-  const inputFilepath = event.input_file_path
+exports.handler = async (event, context, callback) => {
+  console.log("hello");
+  console.log(event);
+  const body = JSON.parse(event.body);
+  const inputText = body.input_text;
+  const inputFilepath = body.input_file_path
   const recordId = nanoid();
 
   const REGION = "us-east-1";
@@ -30,18 +33,18 @@ exports.handler = async (event) => {
   try {
     const response = await dynamoClient.send(putItemCommand);
     console.log("Item inserted successfully:", response);
-    callback(null, "Success!");
-    // return {
-    //   statusCode: 200,
-    //   body: JSON.stringify({ message: 'Record saved successfully' })
-    // };
+    // callback(null, "Success!");
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Record saved successfully' })
+    };
   } catch (err) {
-    // console.error(err);
-    // return {
-    //   statusCode: 500,
-    //   body: JSON.stringify({ message: 'Error saving record' })
-    // };
-    console.error("Error inserting item:", error);
-    callback(error);
+    console.error(err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Error saving record' })
+    };
+    // console.error("Error inserting item:", err);
+    // callback(err);
   }
 };

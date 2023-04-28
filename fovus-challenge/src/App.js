@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { APIGatewayClient, CreateResourceCommand } from "@aws-sdk/client-api-gateway";
 
 // Configure AWS S3 credentials
 const s3Client = new S3Client({ region: "us-east-1",
@@ -9,20 +8,6 @@ credentials: {
   secretAccessKey: process.env.REACT_APP_SECRET_ACCESS_KEY
 },
 });
-
-const apiGatewayClient = new APIGatewayClient({ region: 'us-east-1',
-credentials: {
-  accessKeyId: process.env.REACT_APP_ACCESS_KEY_ID, 
-  secretAccessKey: process.env.REACT_APP_SECRET_ACCESS_KEY
-},
-});
-
-const createResourceCommand = new CreateResourceCommand({
-  restApiId: 'y1ejrwiam4',
-  parentId: 'i4gy7bydp3',
-  pathPart: '/send',
-});
-
 
 const App = () => {
   const [textInput, setTextInput] = useState('');
@@ -72,24 +57,18 @@ const App = () => {
       console.log("File uploaded successfully.");
 
       // API Gateway code
-      // const url = 'https://y1ejrwiam4.execute-api.us-east-1.amazonaws.com/prod/';
-      // const Lambdaparams = { param1: textInput, param2: key };
-      // const response = await fetch(url, {
-      //   method: 'POST',
-      //   body: JSON.stringify(Lambdaparams),
-      // });
-      // console.log(Lambdaparams)
-      // const json = await response.json();
-      // console.log(json.result);
+      const url = process.env.REACT_APP_API_GATEWAY_ENDPOINT + process.env.REACT_APP_METHOD;
+      const Lambdaparams = {
+        "input_text": textInput,
+        "input_file_path": bucketName + '/' + key
+      };
+      const response = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(Lambdaparams),
+      });
 
-      apiGatewayClient.send(createResourceCommand).then(
-        (data) => {
-          console.log(data);
-        },
-        (error) => {
-          console.log(error);
-        }
-      );
+      const json = await response.json();
+      console.log(json.message);
 
     } catch (err) {
       console.error("Failed to upload file:", err);

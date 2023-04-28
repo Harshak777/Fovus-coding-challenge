@@ -4,6 +4,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as events from 'aws-cdk-lib/aws-lambda-event-sources'
 
 
 export class UtilsStack extends cdk.Stack {
@@ -12,7 +13,8 @@ export class UtilsStack extends cdk.Stack {
     // Create DynamoDB table
     const fileTable = new dynamodb.Table(this, 'FileTable', {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-      tableName: 'input-storage'
+      tableName: 'input-storage',
+      stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
 });
 
 fileTable.addGlobalSecondaryIndex({
@@ -25,7 +27,7 @@ fileTable.addGlobalSecondaryIndex({
     name: 'id',
     type: dynamodb.AttributeType.STRING
   },
-  projectionType: dynamodb.ProjectionType.ALL
+  projectionType: dynamodb.ProjectionType.ALL,
 });
 
 // Add an input file path field to the table
@@ -49,35 +51,63 @@ const bucket = new s3.Bucket(this, 'bucket', {
 
 // Create Lambda function
 const handler = new lambda.Function(this, 'Handler', {
-  functionName: 'dummy',
+  functionName: 'dynamoLoader',
   runtime: lambda.Runtime.NODEJS_14_X,
   code: lambda.Code.fromAsset('lambda'),
-  handler: 'index.handler',
-  // environment: {
-  //   TABLE_NAME: fileTable.tableName,
-  //   BUCKET_NAME: bucket.bucketName,
-  // },
+  handler: 'index.handler'
 });
 
-// Grant permissions to Lambda function
-fileTable.grantReadWriteData(handler);
-bucket.grantReadWrite(handler);
-
-// Create API Gateway
-const api = new apigateway.RestApi(this, 'Api', {
-  restApiName: 'SendToDynamo',defaultCorsPreflightOptions: {
+const api = new apigateway.RestApi(this, 'LoadDataToDynamo', {
+  defaultMethodOptions: {
+    authorizationType: apigateway.AuthorizationType.NONE,
+  },
+  defaultCorsPreflightOptions: {
     allowOrigins: apigateway.Cors.ALL_ORIGINS,
     allowMethods: apigateway.Cors.ALL_METHODS,
     allowHeaders: apigateway.Cors.DEFAULT_HEADERS,
   },
+},
+);
+
+const myResource = api.root.addResource('send');
+
+// myResource.addMethod('POST', new apigateway.LambdaIntegration(handler));
+myResource.addMethod('ANY', new apigateway.LambdaIntegration(handler));
+
+// Grant permissions to Lambda function
+fileTable.grantReadWriteData(handler);
+
+const organizer = new lambda.Function(this, 'Organizer', {
+  functionName: 'VMInit',
+  runtime: lambda.Runtime.NODEJS_14_X,
+  code: lambda.Code.fromAsset('organizer'),
+  handler: 'index.handler'
 });
 
+fileTable.grantWriteData(organizer);
 
-// Create resource and method
-const resource = api.root.addResource('send');
-const method = resource.addMethod('POST',new apigateway.LambdaIntegration(handler));
+organizer.addEventSource(new events.DynamoEventSource(fileTable, {
+  startingPosition: lambda.StartingPosition.LATEST,
+}));
 
-// Connect Lambda function to API Gateway
+fileTable.grantStreamRead(organizer);
+
+// const rule = new events.Rule(this, 'MyRule', {
+//   eventPattern: {
+//     source: ['aws.dynamodb'],
+//     detailType: ['AWS API Call via CloudTrail'],
+//     detail: {
+//       eventSource: ['dynamodb.amazonaws.com'],
+//       eventName: ['PutItem'],
+//       requestParameters: {
+//         tableName: [fileTable.tableName],
+//       },
+//     },
+//   },
+// });
+
+// // Add the Lambda function as a target for the event rule
+// rule.addTarget(new targets.LambdaFunction(organizer));
 
   }
 }
