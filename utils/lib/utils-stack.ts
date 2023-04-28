@@ -53,10 +53,10 @@ const handler = new lambda.Function(this, 'Handler', {
   runtime: lambda.Runtime.NODEJS_14_X,
   code: lambda.Code.fromAsset('lambda'),
   handler: 'index.handler',
-  environment: {
-    TABLE_NAME: fileTable.tableName,
-    BUCKET_NAME: bucket.bucketName,
-  },
+  // environment: {
+  //   TABLE_NAME: fileTable.tableName,
+  //   BUCKET_NAME: bucket.bucketName,
+  // },
 });
 
 // Grant permissions to Lambda function
@@ -65,7 +65,11 @@ bucket.grantReadWrite(handler);
 
 // Create API Gateway
 const api = new apigateway.RestApi(this, 'Api', {
-  restApiName: 'SendToDynamo',
+  restApiName: 'SendToDynamo',defaultCorsPreflightOptions: {
+    allowOrigins: apigateway.Cors.ALL_ORIGINS,
+    allowMethods: apigateway.Cors.ALL_METHODS,
+    allowHeaders: apigateway.Cors.DEFAULT_HEADERS,
+  },
 });
 
 
