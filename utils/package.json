@@ -11,9 +11,11 @@
     "cdk": "cdk"
   },
   "devDependencies": {
+    "@types/dotenv": "^8.2.0",
     "@types/jest": "^29.4.0",
-    "@types/node": "18.14.6",
+    "@types/node": "^18.14.6",
     "aws-cdk": "2.77.0",
+    "dotenv": "^16.0.3",
     "jest": "^29.5.0",
     "ts-jest": "^29.0.5",
     "ts-node": "^10.9.1",
@@ -22,6 +24,7 @@
   "dependencies": {
     "@aws-cdk/aws-lambda-event-sources": "^1.200.0",
     "aws-cdk-lib": "^2.77.0",
+    "boto3": "^0.0.1",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.21"
   }

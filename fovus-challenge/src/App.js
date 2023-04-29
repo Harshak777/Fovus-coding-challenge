@@ -22,13 +22,6 @@ const App = () => {
     console.log(event.target.files[0]);
 
     setFileContent(file);
-    // const reader = new FileReader();
-
-    // reader.onload = (e) => {
-    //   setFileContent(e.target.result);
-    // };
-
-    // reader.readAsText(file);
   }
 
   const handleFileUpload = async (file) => {
